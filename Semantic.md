@@ -2427,38 +2427,755 @@ You already studied those **AG limitations + central repository** above, so don'
 
 ---
 
-# 8. THIS SECTION'S ENTIRE MEMORY SHEET
+# 8. Type Conversion / Coercion ⭐
 
-Only memorize these new things:
+You already know this:
 
 ```text
-Semantic analysis can run:
-→ during parsing
-→ or as a later IR/tree pass
-
-Type-system purposes:
-→ Runtime safety
-→ Expressiveness
-→ Better code generation
-→ Type checking
-
-Circularity handling:
-→ Avoidance
-→ Evaluation
-
-Attribute evaluation methods:
-→ Dynamic
-→ Oblivious
-→ Rule-based
-
-Bottom-up ad-hoc SDT:
-→ REDUCE = run semantic action
-
-Semantic values:
-→ can live on parser stack
-→ full parse tree not always required
+int + double
+     ↓
+conversion
+     ↓
+double + double
 ```
 
-That's it.
+The lecture explicitly says an operation may require **type casting before it is performed**.
 
-**Everything else from the old “REMAINING PARTS ONLY” section was already taught in the FINAL EXAM GUIDE and does not need to be learned twice.**
+Now learn the terminology.
+
+## Coercion = AUTOMATIC conversion
+
+Compiler does it for you.
+
+```c
+double x;
+int a = 5;
+
+x = a;
+```
+
+Compiler effectively converts:
+
+```text
+int 5
+ ↓ automatically
+double 5.0
+```
+
+That's **coercion / implicit conversion**.
+
+## Explicit conversion / Cast = programmer asks for it
+
+```c
+double x = 5.8;
+
+int y = (int)x;
+```
+
+Here programmer explicitly says:
+
+```text
+double → int
+```
+
+### Memory
+
+```text
+COERCION = compiler converts automatically
+
+CAST     = programmer explicitly converts
+```
+
+---
+
+# 9. Widening vs Narrowing ⭐
+
+This was directly asked in an older semester paper, so know it.
+
+## Widening
+
+Move from a **smaller/less expressive type → larger/more expressive type**.
+
+```text
+int → float → double
+```
+
+Example:
+
+```text
+int 5
+  ↓
+double 5.0
+```
+
+Usually safer because the destination can represent a wider range/precision of values.
+
+Mental picture:
+
+```text
+small box → BIG box ✅
+```
+
+## Narrowing
+
+Move from a **larger/more expressive type → smaller/less expressive type**.
+
+```text
+double → float → int
+```
+
+Example:
+
+```text
+5.8
+ ↓
+(int)
+ ↓
+5
+```
+
+Information can be lost.
+
+Mental picture:
+
+```text
+BIG box → small box ⚠️
+```
+
+### Exam table
+
+| Widening              | Narrowing                 |
+| --------------------- | ------------------------- |
+| Smaller → larger type | Larger → smaller type     |
+| Usually safer         | May lose information      |
+| `int → double`        | `double → int`            |
+| Often implicit        | Often needs explicit cast |
+
+### Memory
+
+```text
+WIDEN = room gets bigger ✅
+NARROW = room gets smaller ⚠️
+```
+
+---
+
+# 10. Static vs Dynamic Type Checking
+
+This distinction is **extra exam insurance**; it is not explicitly developed in the supplied Semantic Analysis lecture the way the earlier topics are.
+
+Do NOT confuse this with:
+
+```text
+Dynamic attribute evaluation
+```
+
+That's a completely different concept.
+
+## Static type checking
+
+Check types **before program execution**, normally during compilation.
+
+```c
+int x;
+x = "hello";
+```
+
+Compiler catches it before running.
+
+```text
+SOURCE
+  ↓
+COMPILER checks type
+  ↓
+run only if valid
+```
+
+Examples of statically typed languages:
+
+```text
+C
+C++
+Java
+```
+
+## Dynamic type checking
+
+Type validity is checked **while the program runs**.
+
+Mental picture:
+
+```text
+Program starts running
+        ↓
+operation happens
+        ↓
+type is checked
+```
+
+### Memory
+
+```text
+STATIC  = before RUN
+DYNAMIC = during RUN
+```
+
+Do not write:
+
+```text
+Dynamic type checking = Dynamic attribute evaluation
+```
+
+❌ They are unrelated.
+
+---
+
+# 11. Semantic-rule templates — the only pattern you need
+
+Don't memorize 20 different rules.
+
+Every semantic check basically asks:
+
+```text
+What type/information do the children have?
+              ↓
+Is this operation legal?
+              ↓
+result type OR semantic error
+```
+
+Your lecture already uses this idea for expression typing: operand types are mapped to a result type.
+
+Now apply the SAME idea to common constructs.
+
+---
+
+# 12. Array semantic checking
+
+Suppose:
+
+```c
+a[i]
+```
+
+Compiler needs to check:
+
+```text
+1. Is a actually an array?
+2. Is i a valid index type?
+3. What is the element type?
+```
+
+The source specifically identifies array dimensionality as context-sensitive information and says dimensions/types can be checked as encountered.
+
+### Generic semantic rule
+
+```text
+E → id [ index ]
+
+if id.type = array(T)
+   AND index.type = int
+
+      E.type = T
+
+else
+      E.type = error
+```
+
+Example:
+
+```c
+int a[10];
+int i;
+
+a[i]
+```
+
+```text
+a = array of int
+i = int
+      ↓
+a[i].type = int ✅
+```
+
+But:
+
+```c
+a[2.5]
+```
+
+If the language requires integral indices:
+
+```text
+index = float
+     ↓
+semantic error ❌
+```
+
+### Multi-dimensional array
+
+```c
+a[i][j]
+```
+
+Also verify that `a` has the required number of dimensions.
+
+### Memory
+
+```text
+ARRAY CHECK:
+
+array?
+index integer?
+dimension correct?
+        ↓
+element type
+```
+
+---
+
+# 13. Pointer semantic checking
+
+The source explicitly lists pointer-related questions as context-sensitive issues.
+
+Think of:
+
+```c
+int *p;
+```
+
+as:
+
+```text
+p.type = pointer(int)
+```
+
+## Dereference `*p`
+
+```text
+if p.type = pointer(T)
+      (*p).type = T
+else
+      error
+```
+
+Example:
+
+```text
+p : pointer(int)
+
+*p
+ ↓
+int
+```
+
+## Address operator `&x`
+
+If:
+
+```text
+x.type = T
+```
+
+then:
+
+```text
+(&x).type = pointer(T)
+```
+
+Example:
+
+```text
+x : int
+
+&x
+ ↓
+pointer(int)
+```
+
+## Pointer assignment
+
+```c
+int *p;
+int *q;
+
+p = q;      ✅
+```
+
+Types compatible.
+
+But conceptually:
+
+```c
+int *p;
+double *q;
+
+p = q;
+```
+
+requires the language's pointer-compatibility rules; otherwise semantic error.
+
+### Memory
+
+```text
+*p : pointer(T) → T
+
+&x : T → pointer(T)
+```
+
+Beautifully opposite.
+
+---
+
+# 14. Function-call semantic checking ⭐
+
+Semantic analysis explicitly includes **argument and return-value checking**, and the book notes that procedure interfaces require keeping parameter lists and their types.
+Suppose:
+
+```c
+float f(int x, double y);
+```
+
+Call:
+
+```c
+f(a,b)
+```
+
+Compiler checks:
+
+```text
+expected:
+(int, double)
+
+actual:
+(type(a), type(b))
+```
+
+Then:
+
+```text
+number of arguments correct?
+          ↓
+argument types compatible?
+          ↓
+YES → expression type = function return type
+NO  → semantic error
+```
+
+### Generic rule
+
+```text
+E → id ( Args )
+
+if id is function
+AND number(Args) = number(parameters)
+AND argument types compatible
+
+      E.type = id.returnType
+
+else
+      E.type = error
+```
+
+Example:
+
+```c
+float f(int x, double y);
+
+f(5, 2.5)
+```
+
+```text
+5   : int    ✅
+2.5 : double ✅
+
+return type = float
+
+therefore:
+
+type(f(5,2.5)) = float
+```
+
+But:
+
+```c
+f(5)
+```
+
+```text
+expects 2
+gets 1
+ ↓
+semantic error ❌
+```
+
+Your slides also explicitly discuss inferring a procedure's type from its declared signature or return expression.
+
+---
+
+# 15. Return-statement checking
+
+Suppose:
+
+```c
+int f() {
+    return 5;
+}
+```
+
+Valid:
+
+```text
+function return type = int
+return expression   = int
+                    ↓
+                   ✅
+```
+
+But:
+
+```c
+int f() {
+    return "hello";
+}
+```
+
+Conceptually:
+
+```text
+expected int
+got string
+    ↓
+semantic error ❌
+```
+
+### Rule
+
+```text
+return E
+
+if compatible(E.type, currentFunction.returnType)
+      valid
+else
+      error
+```
+
+---
+
+# 16. `if` semantic rule
+
+You already know how to draw an `if` AST.
+
+Now the semantic part:
+
+```c
+if (condition)
+    statement;
+```
+
+The important question is:
+
+> **Can `condition` legally act as a condition in this language?**
+
+For a boolean-condition language:
+
+```text
+if condition.type = boolean
+      valid
+else
+      semantic error
+```
+
+Generic SDD-style idea:
+
+```text
+S → if ( E ) S1
+
+if E.type = boolean
+      S.type = valid
+else
+      S.type = error
+```
+
+Example:
+
+```c
+if (a < b)
+```
+
+First:
+
+```text
+a < b
+  ↓
+boolean
+```
+
+Then:
+
+```text
+if(boolean) ✅
+```
+
+So don't think of `if` as a completely new semantic problem:
+
+```text
+check expression
+      ↓
+must produce legal condition
+```
+
+---
+
+# 17. `while` semantic rule ⭐
+
+Exactly the same idea.
+
+```c
+while (condition)
+      statement;
+```
+
+For boolean-condition languages:
+
+```text
+condition.type must be boolean
+```
+
+Generic rule:
+
+```text
+S → while ( E ) S1
+
+if E.type = boolean
+      S.type = valid
+else
+      S.type = error
+```
+
+An older semester question actually asks for type checking/SDD around a `while` expression, so this pattern is worth knowing.
+
+Example:
+
+```c
+while (x < y || i != 10)
+```
+
+Work **bottom-up**:
+
+```text
+x < y
+  ↓
+boolean
+
+i != 10
+  ↓
+boolean
+
+boolean || boolean
+        ↓
+     boolean
+
+while(boolean)
+      ↓
+     valid ✅
+```
+
+Same exact type-checking logic you've already learned.
+
+---
+
+# 18. One MASTER TEMPLATE for arrays/functions/if/while
+
+Don't memorize them as separate chapters.
+
+```text
+          CHILD INFORMATION
+                 ↓
+        semantic requirement
+                 ↓
+       ┌─────────┴──────────┐
+       │                    │
+   compatible            invalid
+       │                    │
+       ↓                    ↓
+result/type/value          ERROR
+```
+
+Examples:
+
+```text
+a[i]
+↓
+array + integer index?
+↓
+element type
+
+
+f(a,b)
+↓
+argument count/types correct?
+↓
+return type
+
+
+if(E)
+↓
+E is legal condition?
+↓
+valid
+
+
+while(E)
+↓
+E is legal condition?
+↓
+valid
+
+
+*p
+↓
+p is pointer(T)?
+↓
+T
+```
+
+**Same algorithm every time.**
+
+---
+
+# 19. FINAL PATCH MEMORY SHEET
+
+```text
+Coercion = automatic/implicit conversion
+Cast     = explicit conversion
+
+Widening  = smaller → larger type; usually safer
+Narrowing = larger → smaller type; may lose data
+
+Static type checking  = before execution
+Dynamic type checking = during execution
+
+Array:
+array(T) + integer index → T
+
+Pointer:
+pointer(T) → *p has type T
+T → &x has type pointer(T)
+
+Function:
+check argument count + argument types
+→ result = return type
+
+return E:
+E.type compatible with function return type
+
+if(E):
+E must be a legal condition
+
+while(E):
+E must be a legal condition
+```
+
+That closes the useful gaps without reopening the whole chapter.
