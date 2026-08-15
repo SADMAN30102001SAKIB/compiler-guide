@@ -2057,3 +2057,1290 @@ AG limitations / ad-hoc SDT theory
 This matches the trend: older papers leaned more heavily on type theory, while the recent papers increasingly ask applied **SDD/SDT + AST + attributed-tree** questions.  
 
 I have intentionally **not expanded the little old out-of-slide legacy topics we previously decided to drop**. This guide is the shortest set I'd study for maximum return while still covering the current-slide concepts that can generate the recurring semester-question variations.
+
+# SEMANTIC ANALYSIS — REMAINING PARTS ONLY
+
+This continues the guide from where we left off. I’m **not repeating AST, SDD/SDT, attributed tree, synthesized/inherited, S-attributed/L-attributed basics** except where a tiny reminder is needed.
+
+Your lecture explicitly treats semantic analysis as **context-sensitive analysis** and includes type/size/argument-return/scope/duplicate checking. 
+
+---
+
+## 1. What exactly does Semantic Analysis check?
+
+Parser asks:
+
+> **“Is this program grammatically valid?”**
+
+Semantic analyzer asks:
+
+> **“Okay... but does it actually make sense?”**
+
+Example:
+
+```c
+int x;
+x = "hello";
+```
+
+Grammar ✅
+Meaning ❌ because `x` is `int`, but `"hello"` is a string.
+
+Typical semantic checks:
+
+* type checking
+* scope checking
+* duplicate declaration
+* function argument checking
+* return-type checking
+* array/dimension checking
+* declaration-before-use checking
+
+
+
+### Exam definition
+
+**Semantic analysis checks the meaning and consistency of a syntactically correct program using contextual information.**
+
+That's enough.
+
+---
+
+# 2. TYPE SYSTEM
+
+This is one of the remaining important pieces.
+
+A **type** tells the compiler what kind of value something can hold and what operations are valid on it.
+
+```c
+int x;
+float y;
+char c;
+```
+
+So:
+
+```text
+x → integer
+y → float
+c → character
+```
+
+A **type system** = all the available types + rules about how those types can be used. 
+
+---
+
+## 3. Why do we need a Type System?
+
+Lecture gives four purposes:
+
+1. **Runtime safety**
+2. **Better expressiveness**
+3. **Better code generation**
+4. **Type checking**
+
+
+
+You don't need a huge explanation.
+
+### Mental picture
+
+```text
+TYPE SYSTEM
+     ↓
+"Can these things legally work together?"
+```
+
+Example:
+
+```c
+int x;
+x = 5;       ✅
+x = "abc";   ❌
+```
+
+---
+
+# 4. The 4 components of a Type System ⭐
+
+Memorize:
+
+> **Base → Build → Compare → Infer**
+
+That's basically the whole thing.
+
+---
+
+## Component 1 — Base Types
+
+Basic built-in types:
+
+```text
+int
+float
+char
+boolean
+```
+
+Examples:
+
+```c
+int x;
+char c;
+bool flag;
+```
+
+These are types provided directly by the language. 
+
+---
+
+## Component 2 — Constructed Types
+
+Build complicated types using simpler types.
+
+Examples:
+
+```text
+array
+string
+record/struct
+pointer
+list
+stack
+tree
+```
+
+Example:
+
+```c
+int a[10];
+```
+
+`int` = base type
+`array of int` = constructed type.
+
+
+
+---
+
+# 5. Type Equivalence ⭐
+
+Compiler sometimes must answer:
+
+> Are these two types considered the same?
+
+Two major methods.
+
+## A. Name equivalence
+
+Same **type name** → equivalent.
+
+Example:
+
+```text
+type Student = ...
+type Teacher = ...
+```
+
+Even if their structures happen to look identical:
+
+```text
+Student ≠ Teacher
+```
+
+because names differ.
+
+### Memory
+
+> **NAME equivalence → look at NAME**
+
+---
+
+## B. Structural equivalence
+
+Forget the names.
+
+Check whether their **internal structures are identical**.
+
+Example:
+
+```text
+A = { int x; float y; }
+B = { int x; float y; }
+```
+
+Structurally:
+
+```text
+A = B
+```
+
+because fields, order and field types match.
+
+
+
+### Easy exam table
+
+| Name equivalence         | Structural equivalence           |
+| ------------------------ | -------------------------------- |
+| Checks type name         | Checks type structure            |
+| Same name required       | Same internal structure required |
+| Names differ → different | Names may differ                 |
+
+---
+
+# 6. Type Inference
+
+**Inference = compiler figures out the type.**
+
+Lecture considers type inference for:
+
+```text
+constant
+variable
+function
+operation
+expression
+```
+
+
+
+Let's make all five stupidly easy.
+
+---
+
+## A. Type of a constant
+
+```text
+2      → int
+2.0    → float
+'a'    → char
+true   → boolean
+```
+
+Sometimes context can also decide it.
+
+Example from the lecture:
+
+```text
+sin(2)
+```
+
+If `sin()` requires floating-point input, `2` may be treated accordingly. 
+
+---
+
+## B. Type of a variable
+
+If declarations are required:
+
+```c
+float x;
+```
+
+therefore:
+
+```text
+type(x) = float
+```
+
+Easy.
+
+In languages where variables don't require an explicit declared type, the compiler/interpreter may infer it from the assigned expression.
+
+```text
+x = 2.0
+→ x is float
+```
+
+
+
+---
+
+## C. Type of a function
+
+```c
+int sum() {
+   return 5;
+}
+```
+
+So:
+
+```text
+return type(sum) = int
+```
+
+Or a language may infer it from:
+
+```text
+return 2.0
+```
+
+→ float.
+
+
+
+---
+
+# 7. Type of an operation ⭐
+
+Suppose:
+
+```text
+int + int → int
+float + float → float
+int + float → ?
+```
+
+Compiler has rules saying:
+
+```text
+operand type + operand type → result type
+```
+
+For example:
+
+```text
+int + float
+```
+
+may require:
+
+```text
+int
+ ↓ cast
+float + float
+      ↓
+    float
+```
+
+That's **type casting/conversion**.
+
+The lecture specifically describes operation typing as mapping operand types to a result type and notes that casting may be needed first. 
+
+### Mental rule
+
+```text
+INPUT TYPES → operator rule → OUTPUT TYPE
+```
+
+---
+
+# 8. Type of an entire expression
+
+Example:
+
+```c
+a + b * 2.5
+```
+
+Compiler already knows:
+
+```text
+type(a)
+type(b)
+type(2.5)
+type(*)
+type(+)
+```
+
+Then it combines those rules bottom-up to determine the whole expression's type.
+
+```text
+        +
+       / \
+      a   *
+         / \
+        b  2.5
+```
+
+Types move upward until the root gets its type.
+
+That's expression type inference. 
+
+And notice something important:
+
+**This is exactly why attribute grammars fit semantic analysis so naturally.**
+
+We can attach:
+
+```text
+.type
+```
+
+to nodes.
+
+Example:
+
+```text
+        E.type=float
+          +
+        /   \
+ int ← E     T → float
+```
+
+---
+
+# 9. Attribute Grammar — one missing core idea
+
+You already know attributes.
+
+The extra thing to understand is:
+
+> **Attribute Grammar = CFG + attributes + semantic rules**
+
+Normal CFG:
+
+```text
+E → E1 + T
+```
+
+Attribute grammar:
+
+```text
+E → E1 + T
+E.type = result(E1.type, T.type)
+```
+
+So grammar tells us **structure**.
+
+Semantic rules tell us **meaning/computation**.
+
+The lecture defines an attribute grammar as a context-free grammar augmented with computation rules. 
+
+---
+
+# 10. Dependency Graph ⭐
+
+This sounds complicated but is ridiculously simple.
+
+Suppose:
+
+```text
+A.val = B.val + C.val
+```
+
+Before calculating `A.val`, you need:
+
+```text
+B.val
+C.val
+```
+
+Therefore:
+
+```text
+B.val ──→ A.val
+C.val ──→ A.val
+```
+
+The arrows tell:
+
+> **What must be known before what.**
+
+That's a **dependency graph**.
+
+The lecture says the dependencies created by semantic rules across the parse tree form an **attribute dependence graph**. 
+
+---
+
+## Universal rule for drawing dependency graph
+
+If:
+
+```text
+X = f(Y,Z)
+```
+
+draw:
+
+```text
+Y → X
+Z → X
+```
+
+Because **X depends on Y and Z**.
+
+### DO NOT reverse it.
+
+Think:
+
+> **information flows toward the answer.**
+
+---
+
+# 11. Evaluation Order
+
+Suppose:
+
+```text
+B → A
+C → A
+A → D
+```
+
+Then obviously:
+
+```text
+B,C first
+↓
+A
+↓
+D
+```
+
+You cannot calculate something before the things it depends on.
+
+That's literally evaluation order.
+
+---
+
+# 12. Circularity ⭐
+
+Now suppose dependency graph becomes:
+
+```text
+A → B
+↑   ↓
+└── C
+```
+
+or simply:
+
+```text
+A → B
+B → A
+```
+
+Problem:
+
+To calculate `A`, need `B`.
+
+But to calculate `B`, need `A`.
+
+💀
+
+Neither can start.
+
+That's **circular dependency / circular attribute grammar**.
+
+The lecture explicitly warns that cyclic dependence graphs can make normal attribute evaluation fail. 
+
+### Exam definition
+
+**Circularity occurs when attribute dependencies form a cycle, so an attribute ultimately depends on itself.**
+
+### Recognition shortcut
+
+If you can follow arrows and return to the starting node:
+
+```text
+A → B → C → A
+```
+
+**CIRCULAR.**
+
+No return:
+
+```text
+A → B → C
+```
+
+**NOT circular.**
+
+---
+
+# 13. How is circularity handled?
+
+Your slide gives two approaches:
+
+### 1. Avoidance
+
+Design/restrict the attribute grammar so cycles can't occur.
+
+### 2. Evaluation
+
+Use a special evaluation method capable of assigning values even where cycles exist.
+
+
+
+For exam, those two lines are enough.
+
+---
+
+# 14. Attribute Evaluation Methods
+
+Your lecture gives three categories:
+
+```text
+1. Dynamic methods
+2. Oblivious methods
+3. Rule-based methods
+```
+
+
+
+Do **not** burn time learning massive details unless specifically asked.
+
+Remember:
+
+### Dynamic
+
+Evaluation order determined while processing the particular tree.
+
+### Oblivious
+
+Uses a predetermined evaluation strategy.
+
+### Rule-based
+
+Rules determine/schedule how attributes are evaluated.
+
+Priority: **low-medium** compared with S/L-attributed questions.
+
+---
+
+# 15. VERY IMPORTANT S vs L shortcut
+
+Tiny revision because this can save an MCQ.
+
+## S-attributed
+
+Every attribute = **synthesized**.
+
+Information:
+
+```text
+children
+   ↓
+ parent
+```
+
+Bottom-up.
+
+---
+
+## L-attributed
+
+Inherited attributes are allowed, but information must flow in a left-to-right-safe way.
+
+For:
+
+```text
+A → X1 X2 X3
+```
+
+Inherited attribute of `X2` can depend on:
+
+```text
+A      ✅ parent
+X1     ✅ left sibling
+```
+
+but NOT:
+
+```text
+X3     ❌ right sibling
+```
+
+### Golden rule
+
+> **Inherited attribute cannot look to its RIGHT.**
+
+And:
+
+> **Every S-attributed SDD is L-attributed, but every L-attributed SDD is NOT necessarily S-attributed.**
+
+This exact relationship is stated in your lecture. 
+
+So mentally:
+
+```text
+S-attributed ⊂ L-attributed
+```
+
+---
+
+# 16. Example — classify instantly
+
+```text
+S → A B
+
+S.val = A.val + B.val
+```
+
+`S.val` receives values from children.
+
+Therefore:
+
+```text
+Synthesized
+→ S-attributed
+→ automatically L-attributed too
+```
+
+---
+
+Now:
+
+```text
+S → A B
+
+B.in = A.val
+```
+
+`B` receives something from **left sibling A**.
+
+So:
+
+```text
+Inherited
+→ NOT S-attributed
+→ can be L-attributed ✅
+```
+
+---
+
+Now:
+
+```text
+S → A B
+
+A.in = B.val
+```
+
+`A` receives information from **right sibling B**.
+
+```text
+right → left
+```
+
+Therefore:
+
+```text
+NOT L-attributed ❌
+```
+
+This shortcut solves a massive number of variations.
+
+---
+
+# 17. Problems with Attribute Grammars
+
+This is another remaining theory question worth knowing.
+
+Lecture gives four problems. 
+
+### 1. Non-local information
+
+Attribute rule normally works with symbols appearing in the current production.
+
+But compiler information can live far away.
+
+Example:
+
+```c
+int x;       // way up here
+
+...
+...
+...
+
+x = 10;      // used here
+```
+
+Need information from far away.
+
+---
+
+### 2. Storage management
+
+Real programs create tons of attributes.
+
+Compiler must store/manage them.
+
+---
+
+### 3. Need parse tree
+
+Traditional attribute-grammar approach depends heavily on having the parse tree.
+
+That costs storage/work.
+
+---
+
+### 4. Finding the answers later
+
+After evaluation you get a huge **attributed tree**.
+
+Later compiler phases may need to traverse it again to find information.
+
+### Memory:
+
+> **Non-local → Storage → Tree → Search**
+
+That's enough.
+
+---
+
+# 18. Solution: Central Repository / Symbol Table ⭐
+
+Instead of keeping everything scattered throughout the tree:
+
+```text
+             SYMBOL TABLE
+          ┌───────────────┐
+          │ x   int       │
+          │ y   float     │
+          │ foo function  │
+          └───────────────┘
+             ↑       ↓
+        grammar actions
+```
+
+Store useful information in one central location.
+
+Then everyone can access it.
+
+The book/lecture presents a central repository/global table as a way to address these attribute-grammar problems. 
+
+Example:
+
+```c
+int x;
+```
+
+Symbol table:
+
+| Name | Type |
+| ---- | ---- |
+| x    | int  |
+
+Later:
+
+```c
+x = 5;
+```
+
+compiler searches table:
+
+```text
+x exists? ✅
+type = int
+5 = int
+assignment valid ✅
+```
+
+---
+
+# 19. Ad-hoc Syntax-Directed Translation ⭐
+
+Now everything connects.
+
+Attribute grammar says:
+
+```text
+Here's the mathematical semantic rule.
+```
+
+Real compiler often says:
+
+> Screw making everything a beautiful theoretical attribute system; attach actual code/actions to grammar productions.
+
+That is the idea behind **ad-hoc syntax-directed translation**.
+
+Example:
+
+```text
+E → E1 + T
+```
+
+Attach an action:
+
+```text
+{ checkTypes(E1,T); }
+```
+
+or:
+
+```text
+{ E.val = E1.val + T.val; }
+```
+
+So:
+
+```text
+Grammar production
+        +
+actual action/code
+```
+
+The lecture describes ad-hoc SDT exactly this way: code snippets/actions are directly attached to grammar productions and execute during parsing. 
+
+---
+
+# 20. When does the action execute?
+
+Important for bottom-up parsing.
+
+Suppose:
+
+```text
+E → E + T
+```
+
+In a **shift-reduce parser**, when:
+
+```text
+E + T
+```
+
+gets reduced to:
+
+```text
+E
+```
+
+the semantic action executes.
+
+### Remember
+
+> **Bottom-up parser → semantic action usually at REDUCE.**
+
+This is explicitly stated in the slide. 
+
+---
+
+# 21. Where do semantic values go if we don't build the whole parse tree?
+
+Parser already has a:
+
+```text
+STACK
+```
+
+So semantic values can travel with stack entries.
+
+Imagine:
+
+```text
+Parser stack
+
+┌──────────┐
+│ T val=3  │
+├──────────┤
+│ +        │
+├──────────┤
+│ E val=5  │
+└──────────┘
+```
+
+Reduce:
+
+```text
+E → E + T
+```
+
+Action:
+
+```text
+E.val = 5 + 3
+      = 8
+```
+
+New stack:
+
+```text
+┌──────────┐
+│ E val=8  │
+└──────────┘
+```
+
+That's the key idea.
+
+The lecture specifically notes that ad-hoc SDT can integrate semantic values into the parser's own internal stack instead of constructing the full parse tree. 
+
+---
+
+# 22. Attribute Grammar vs Ad-hoc SDT
+
+Very exam-friendly comparison:
+
+| Attribute Grammar               | Ad-hoc SDT                           |
+| ------------------------------- | ------------------------------------ |
+| Formal/theoretical              | Practical                            |
+| Semantic rules                  | Actual action code                   |
+| Describes computation           | Executes computation                 |
+| Often relies on attributed tree | Can work during parsing              |
+| Harder for non-local info       | Easy to use symbol table/custom code |
+
+Don't overcomplicate this.
+
+---
+
+# 23. AST connection
+
+You already studied this, so just connect the dots:
+
+Compiler front end may use SDT actions to construct:
+
+```text
+AST
+```
+
+Example:
+
+```text
+E → E1 + T
+```
+
+action conceptually:
+
+```text
+E.node = Node('+', E1.node, T.node)
+```
+
+Result:
+
+```text
+       +
+      / \
+     a   *
+        / \
+       b   c
+```
+
+The lecture explicitly connects AST construction with ad-hoc syntax-directed translation. 
+
+So the relationship is:
+
+```text
+CFG production
+      ↓
+semantic action / SDT
+      ↓
+AST
+```
+
+---
+
+# 24. THE WHOLE SEMANTIC ANALYSIS CHAPTER IN ONE MAP 🧠
+
+This is what I want you to keep in your head:
+
+```text
+              SEMANTIC ANALYSIS
+                     │
+       checks whether program makes sense
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+     TYPE SYSTEM          ATTRIBUTE GRAMMAR
+          │                     │
+     base types          attributes + rules
+     new types                  │
+     equivalence          ┌─────┴─────┐
+     inference         Synthesized  Inherited
+                              │         │
+                         bottom-up   parent/left
+                              │
+                         S-attributed
+                                   \
+                                    L-attributed
+                                         │
+                                  Dependency graph
+                                         │
+                               cycle? → Circularity
+                                         │
+                           Attribute grammar problems
+                                         │
+                                  central table
+                                         │
+                               practical solution
+                                         ↓
+                                  AD-HOC SDT
+                                         │
+                              actions during parsing
+                                         │
+                                    build/check
+                                         ↓
+                                        AST
+```
+
+That's basically the whole story.
+
+---
+
+# 25. Question-solving cheat sheet
+
+When you see...
+
+### “Identify synthesized/inherited”
+
+Ask:
+
+```text
+child → parent?
+= SYNTHESIZED
+
+parent/other allowed context → child?
+= INHERITED
+```
+
+---
+
+### “Is this S-attributed?”
+
+Ask:
+
+> Are **ALL** attributes synthesized?
+
+Yes → S-attributed.
+
+One inherited attribute → not S-attributed.
+
+---
+
+### “Is this L-attributed?”
+
+For:
+
+```text
+A → X1 X2 X3
+```
+
+check inherited attributes.
+
+They may use:
+
+```text
+parent ✅
+itself/appropriate local values ✅
+left siblings ✅
+right siblings ❌
+```
+
+---
+
+### “Draw dependency graph”
+
+For every rule:
+
+```text
+X = f(Y,Z)
+```
+
+draw:
+
+```text
+Y → X
+Z → X
+```
+
+---
+
+### “Is grammar circular?”
+
+Follow arrows.
+
+```text
+A → B → C → A
+```
+
+Cycle → **circular**.
+
+---
+
+### “Name vs structural equivalence”
+
+```text
+same name? → name equivalence
+
+same internal structure? → structural equivalence
+```
+
+---
+
+### “Infer expression type”
+
+Work from leaves upward:
+
+```text
+constant/variable types
+        ↓
+operator result
+        ↓
+larger expression
+        ↓
+final type
+```
+
+Cast when necessary.
+
+---
+
+### “Attribute Grammar vs SDT”
+
+```text
+AG  = formal specification
+SDT = executable actions attached to grammar
+```
+
+---
+
+# 26. What you actually need to memorize
+
+Don't memorize the whole 46-slide deck word-for-word.
+
+Memorize these **12 things**:
+
+1. Semantic analysis = meaning/context checking.
+2. Type system = types + rules.
+3. Four type-system components = **Base, Build, Compare, Infer**.
+4. Name equivalence = same name.
+5. Structural equivalence = same structure.
+6. Synthesized = **child → parent**.
+7. Inherited = information comes from surrounding context.
+8. S-attributed = only synthesized.
+9. L-attributed = inherited information cannot depend on a right sibling.
+10. Dependency rule: `Y used to compute X ⇒ Y → X`.
+11. Cycle in dependency graph = circularity.
+12. Attribute Grammar = formal rules; ad-hoc SDT = actual code/actions attached to productions.
+
+---
+
+## Final priority
+
+For **your exam**, I'd study Semantic Analysis in this order:
+
+**★★★★★ Must master**
+
+```text
+SDD / SDT
+Synthesized vs inherited
+S-attributed vs L-attributed
+Attributed/parse-tree questions
+AST construction
+Type checking/type inference
+```
+
+**★★★★ Know properly**
+
+```text
+Type system
+Name vs structural equivalence
+Dependency graph
+Circularity
+```
+
+**★★ Quick theory only**
+
+```text
+Attribute evaluation methods
+Problems of attribute grammar
+Central repository
+Ad-hoc SDT implementation details
+```
+
+So yes: with **the previous guide + these remaining parts**, you've now covered the meaningful Semantic Analysis material from the lecture rather than just the obvious repeated question patterns. The lecture itself spans type systems, attribute grammars, dependency/circularity, S/L definitions, attribute-grammar limitations, ad-hoc SDT, and AST construction.    
